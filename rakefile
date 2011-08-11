@@ -1,0 +1,26 @@
+task :deploy do |t|
+  require 'aws/s3'
+  AWS::S3::Base.establish_connection!(
+    :access_key_id => ENV['AMAZON_ACCESS_KEY_ID'],
+    :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY']
+  )
+  bucket_correspondence = {
+    'dev' => 'relteq-util-dev',
+    'staging' => 'relteq-util-staging',
+    'master' => 'relteq-util'
+  }
+  files = ['s3_helper.js']
+  ref = `git symbolic-ref HEAD 2>/dev/null`
+  ref =~ /refs\/heads\/(\S+)/
+  branch_name = $1
+  puts "Deploying branch #{branch_name}:"
+  files.each do |f|
+    puts "Uploading #{f}"
+    AWS::S3::S3Object.store(
+      f, 
+      open(f), 
+      bucket_correspondence[branch_name],
+      :access => :public_read
+    )
+  end
+end
